@@ -134,7 +134,6 @@
                 </div>
 
                 <div class="capture-tabs" role="tablist" aria-label="Capture sections">
-                    <button class="capture-tab active role-restricted" type="button" data-capture-tab="overview" data-allowed-roles="admin,super_admin">Overview</button>
                     <button class="capture-tab role-restricted" type="button" data-capture-tab="cameras" data-allowed-roles="admin,super_admin">Cameras</button>
                     <button class="capture-tab" type="button" data-capture-tab="recordings">Recordings</button>
                     <button class="capture-tab role-restricted" type="button" data-capture-tab="zones" data-allowed-roles="admin,super_admin">Motion Zones</button>
@@ -142,27 +141,6 @@
                 </div>
 
                 <div class="capture-panels">
-                    <div class="capture-panel active" data-capture-panel="overview">
-                        <div class="capture-overview-grid">
-                            <div class="capture-stat-card">
-                                <span class="capture-stat-label">Cameras</span>
-                                <strong id="captureOverviewCameras">0</strong>
-                            </div>
-                            <div class="capture-stat-card">
-                                <span class="capture-stat-label">Recordings</span>
-                                <strong id="captureOverviewRecordings">0</strong>
-                            </div>
-                            <div class="capture-stat-card">
-                                <span class="capture-stat-label">Alerts</span>
-                                <strong id="captureOverviewAlerts">0</strong>
-                            </div>
-                            <div class="capture-stat-card">
-                                <span class="capture-stat-label">Storage</span>
-                                <strong id="captureOverviewStorage">0 MB</strong>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="capture-panel" data-capture-panel="cameras">
                         <div class="camera-management-toolbar">
                             <h3>Camera Management</h3>
@@ -190,7 +168,7 @@
 
                     <div class="capture-panel" data-capture-panel="storage">
                         <div id="captureStoragePanelContent" class="capture-empty-panel">
-                            Storage metrics, retention policies, and archive management will be available here for capture optimization.
+                            Storage usage and archived capture metrics will be shown here.
                         </div>
                     </div>
                 </div>
@@ -269,8 +247,11 @@
                         </div>
                         <div class="schedule-actions schedule-actions-fullwidth schedule-actions-main">
                             <button class="btn btn-primary" onclick="saveScheduleConfig()">Save Schedule</button>
+                            <span class="schedule-action-divider" aria-hidden="true"></span>
                             <button class="btn btn-sm" onclick="openCalendarView()">Calendar View</button>
+                            <span class="schedule-action-divider" aria-hidden="true"></span>
                             <button class="btn btn-sm" onclick="addScheduleRow()">Add Schedule</button>
+                            <span class="schedule-action-divider" aria-hidden="true"></span>
                             <button class="btn btn-sm" onclick="addHolidayOverride()">Add Override</button>
                         </div>
                     </div>
@@ -312,17 +293,21 @@
                 <div class="section-header">
                     <h2><i data-lucide="chart-no-axes-combined"></i> Analytics & Reports</h2>
                 </div>
-                <div class="analytics-metrics">
-                    <div class="analytics-card">
-                        <h3>Total Cameras</h3>
-                        <div class="metric-value" id="totalCameras">0</div>
-                    </div>
-                    <div class="analytics-card">
-                        <h3>Offline Cameras</h3>
-                        <div class="metric-value" id="offlineCount">0</div>
-                    </div>
-                </div>
                 <div class="analytics-details">
+                    <div class="analytics-card analytics-camera-summary">
+                        <div class="analytics-camera-total">
+                            <span>Total Cameras</span>
+                            <strong id="totalCameras">0</strong>
+                        </div>
+                        <div class="analytics-camera-offline">
+                            <span>Offline Cameras</span>
+                            <strong id="offlineCount">0</strong>
+                        </div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Recording Status Per Camera</h3>
+                        <div id="recordingStatus">Loading…</div>
+                    </div>
                     <div class="analytics-card">
                         <div class="analytics-card-header">
                             <h3>Alarms Per Camera</h3>
@@ -355,10 +340,6 @@
                         <div id="cameraStorageList" class="analytics-list">Loading…</div>
                         <div id="cameraStorageTotal" class="analytics-storage-total"></div>
                     </div>
-                    <div class="analytics-card">
-                        <h3>Recording Status Per Camera</h3>
-                        <div id="recordingStatus">Loading…</div>
-                    </div>
                 </div>
             </section>
 
@@ -375,6 +356,23 @@
                             <p id="systemHealthSummary">Collecting current resource readings…</p>
                         </div>
                         <span id="systemHealthDot" class="system-health-dot" aria-hidden="true"></span>
+                    </div>
+                    <div class="system-card system-uptime-card">
+                        <div class="system-card-heading"><h3>System uptime</h3><span class="system-card-note">Since boot</span></div>
+                        <div class="system-uptime">
+                            <div class="uptime-block">
+                                <div class="uptime-label">Days</div>
+                                <div id="systemUptimeDays" class="uptime-days">0</div>
+                            </div>
+                            <div class="uptime-block">
+                                <div class="uptime-label">Time</div>
+                                <div id="systemUptimeTime" class="uptime-time">00:00:00</div>
+                            </div>
+                            <div class="uptime-bar-wrap">
+                                <div class="uptime-bar"><div id="uptimeBarFill" class="uptime-bar-fill" style="width:0%"></div></div>
+                                <div class="uptime-bar-label">Day progress</div>
+                            </div>
+                        </div>
                     </div>
                     <div class="system-card system-resource-card">
                         <div class="system-card-heading"><h3>Resource usage</h3><span class="system-card-note">Live</span></div>
@@ -401,23 +399,6 @@
                         <div class="system-sensor-row"><span>AI engine</span><strong id="systemAiStatus">Running</strong></div>
                         <div class="system-sensor-row"><span>Alarm Wall XML/TCP</span><strong id="systemAlarmWallStatus">Checking…</strong></div>
                         <div class="system-sensor-row"><span>Cameras online</span><strong id="systemCameraStatus">0</strong></div>
-                    </div>
-                    <div class="system-card system-uptime-card">
-                        <div class="system-card-heading"><h3>System uptime</h3><span class="system-card-note">Since boot</span></div>
-                        <div class="system-uptime">
-                            <div class="uptime-block">
-                                <div class="uptime-label">Days</div>
-                                <div id="systemUptimeDays" class="uptime-days">0</div>
-                            </div>
-                            <div class="uptime-block">
-                                <div class="uptime-label">Time</div>
-                                <div id="systemUptimeTime" class="uptime-time">00:00:00</div>
-                            </div>
-                            <div class="uptime-bar-wrap">
-                                <div class="uptime-bar"><div id="uptimeBarFill" class="uptime-bar-fill" style="width:0%"></div></div>
-                                <div class="uptime-bar-label">Day progress</div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </section>

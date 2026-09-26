@@ -9,7 +9,7 @@ from backend.database import Database
 
 class ScheduleConfigTests(unittest.TestCase):
     def setUp(self):
-        self.temp_dir = tempfile.mkdtemp(prefix='tempest-schedule-', dir='c:/ai-alarm-portal')
+        self.temp_dir = tempfile.mkdtemp(prefix='tempest-schedule-', dir='c:/ai-alarm-system')
         self.db = Database()
         self.db.base_dir = self.temp_dir
         self.db.backend_dir = os.path.join(self.temp_dir, 'backend')

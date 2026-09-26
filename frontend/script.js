@@ -426,7 +426,6 @@ function renderAll() {
     renderStats();
     renderCameras();
     renderCapturePanels();
-    updateCaptureOverview();
     updateAlertBadge();
 }
 
@@ -482,7 +481,6 @@ function renderCaptureStoragePanel() {
 
     const totalStorageMb = state.recordings.reduce((sum, rec) => sum + (Number(rec.size_mb) || 0), 0);
     const archivedCount = state.recordings.filter(rec => rec.archived).length;
-    const retentionDays = Number($('recordingRetentionDays')?.value) || 30;
     const liveCameraCount = state.cameras.filter(camera => (camera.status || 'online') !== 'offline').length;
         refreshIcons();
 
@@ -513,15 +511,6 @@ function renderCaptureStoragePanel() {
             <div class="capture-storage-meter" aria-label="Storage usage">
                 <div class="capture-storage-meter-label"><span>Usage</span><span>${storagePercent.toFixed(0)}%</span></div>
                 <div class="capture-storage-meter-track"><span style="width: ${storagePercent}%"></span></div>
-            </div>
-        </div>
-        <div class="capture-storage-card">
-            <h4>Retention</h4>
-            <div class="capture-storage-meta"><span>Policy</span><span>${retentionDays} days</span></div>
-            <div class="capture-storage-meta"><span>Auto Cleanup</span><span>${$('autoCleanupEnabled')?.checked ? 'Enabled' : 'Disabled'}</span></div>
-            <div class="capture-storage-actions">
-                <button class="btn btn-primary" onclick="saveRecordingsConfig()">Save Policy</button>
-                <button class="btn" onclick="performCleanup()">Cleanup Now</button>
             </div>
         </div>
     `;
@@ -575,6 +564,7 @@ function loadSystemMetrics() {
                     if (data.success && data.system) {
                         const sys = data.system;
                         updateSystemMeter('cpuLoad', 'cpuUsageBar', sys.cpu_load);
+                        updateCpuTrend(sys.cpu_load);
                         updateSystemMeter('ramUsage', 'ramUsageBar', sys.ram_usage);
                         updateSystemMeter('rootDisk', 'rootDiskBar', sys.root_disk);
                         setText('coreTemp', sys.core_temp != null ? `${sys.core_temp.toFixed(1)}°C` : 'Unavailable');
@@ -643,47 +633,27 @@ function loadSystemIntegrationStatus() {
     setText('systemCameraStatus', `${online} / ${state.cameras.length}`);
 }
 
-function updateMetricGauge(fieldId, value, needleId, cardSelector, trendId) {
-    const needle = $(needleId);
-    const card = document.querySelector(cardSelector);
-    if (!needle || !card || typeof value !== 'number') return;
+function updateCpuTrend(value) {
+    const trend = $('cpuLoadTrend');
+    if (!trend || typeof value !== 'number' || !Number.isFinite(value)) return;
 
     const boundedValue = Math.min(100, Math.max(0, value));
-    const rotation = -90 + (boundedValue * 180 / 100);
-    needle.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+    trend.classList.remove('trend-up', 'trend-down', 'trend-flat');
 
-    card.classList.toggle('low', boundedValue <= 50);
-    card.classList.toggle('medium', boundedValue > 50 && boundedValue <= 75);
-    card.classList.toggle('high', boundedValue > 75);
-
-    if (trendId && fieldId === 'cpuLoad') {
-        const trend = $(trendId);
-        if (trend && _prevCpuLoad != null) {
-            if (boundedValue > _prevCpuLoad) {
-                trend.textContent = '↑';
-                trend.classList.add('trend-up');
-                trend.classList.remove('trend-down', 'trend-flat');
-                card.classList.add('cpu-up');
-                card.classList.remove('cpu-down', 'cpu-flat');
-            } else if (boundedValue < _prevCpuLoad) {
-                trend.textContent = '↓';
-                trend.classList.add('trend-down');
-                trend.classList.remove('trend-up', 'trend-flat');
-                card.classList.add('cpu-down');
-                card.classList.remove('cpu-up', 'cpu-flat');
-            } else {
-                trend.textContent = '→';
-                trend.classList.add('trend-flat');
-                trend.classList.remove('trend-up', 'trend-down');
-                card.classList.add('cpu-flat');
-                card.classList.remove('cpu-up', 'cpu-down');
-            }
-        }
+    if (_prevCpuLoad === null || boundedValue === _prevCpuLoad) {
+        trend.textContent = '→';
+        trend.classList.add('trend-flat');
+    } else if (boundedValue > _prevCpuLoad) {
+        trend.textContent = '↑';
+        trend.classList.add('trend-up');
+    } else {
+        trend.textContent = '↓';
+        trend.classList.add('trend-down');
     }
 
-    if (fieldId === 'cpuLoad') {
-        _prevCpuLoad = boundedValue;
-    }
+    _prevCpuLoad = boundedValue;
+    trend.classList.remove('trend-sample');
+    requestAnimationFrame(() => trend.classList.add('trend-sample'));
 }
 
 // Uptime ticker state
@@ -961,23 +931,6 @@ function initCaptureTabs() {
 
     const active = document.querySelector('.capture-tab.active') || tabs[0];
     if (active) activate(active);
-}
-
-function updateCaptureOverview() {
-    const totalCameras = state.cameras.length;
-    const totalRecordings = state.recordings.length;
-    const pendingAlerts = state.stats.unacknowledged || 0;
-    const totalStorageMb = state.recordings.reduce((sum, rec) => sum + (Number(rec.size_mb) || 0), 0);
-
-    const camerasEl = $('captureOverviewCameras');
-    const recordingsEl = $('captureOverviewRecordings');
-    const alertsEl = $('captureOverviewAlerts');
-    const storageEl = $('captureOverviewStorage');
-
-    if (camerasEl) camerasEl.textContent = totalCameras;
-    if (recordingsEl) recordingsEl.textContent = totalRecordings;
-    if (alertsEl) alertsEl.textContent = pendingAlerts;
-    if (storageEl) storageEl.textContent = `${totalStorageMb.toFixed(1)} MB`;
 }
 
 function renderCameras() {
@@ -1893,7 +1846,6 @@ function loadRecordings() {
             state.recordings = data.recordings || [];
             renderRecordings(state.recordings);
             renderCapturePanels();
-            updateCaptureOverview();
         })
         .catch(err => console.error('Error loading recordings:', err));
 }
@@ -1906,7 +1858,6 @@ function renderRecordings(recordings) {
     if (recordings.length === 0) {
         container.innerHTML = '<div class="empty-recordings">No recordings yet. Start recording from the Captures tab to archive video clips.</div>';
         renderCapturePanels();
-        updateCaptureOverview();
         return;
     }
     
@@ -1933,7 +1884,6 @@ function renderRecordings(recordings) {
         `;
     }).join('');
     renderCapturePanels();
-    updateCaptureOverview();
 }
 
 function playRecording(recordingId) {
