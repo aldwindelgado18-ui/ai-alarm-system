@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+.venv/
+.venv-*/
+node_modules/
+recordings/
+.env
+.env.*
+!.env.example
+
+# Runtime data can contain account credentials, camera details, and activity history.
+alerts_log.json
+audit_log.json
+camera_data.json
+connection_events.json
+recordings.json
+schedule_backup.json
+settings.json
+users.json

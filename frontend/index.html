@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEMPEST X - AI Motion Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="authLoading" class="auth-loading" aria-live="polite">Checking session...</div>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <img class="login-logo" src="/logo/logo.png" alt="TEMPEST X Logo">
+                    <h1>TEMPEST X</h1>
+                    <p>AI Motion Portal</p>
+                </div>
+                
+                <form class="login-form" onsubmit="handleLogin(event)">
+                    <div class="login-form-group">
+                        <label>Username</label>
+                        <input type="text" id="loginUsername" required>
+                    </div>
+                    
+                    <div class="login-form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary login-btn">Sign In</button>
+                    
+                    <div id="loginError" class="login-error" style="display: none;"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="main-app" style="display: none;">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <img class="logo-img" src="/logo/logo.png" alt="TEMPEST X Logo">
+                <div>
+                    <span class="logo-text">TEMPEST X</span>
+                    <span class="logo-sub">AI Motion Portal</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="header-status">
+                <span class="status-dot online"></span>
+                <span class="status-text">System Online</span>
+            </div>
+            <div class="header-time" id="currentTime">--:--:--</div>
+            <div class="header-user">
+                <span id="currentUserDisplay">Guest</span>
+                <button class="header-logout-btn" onclick="handleLogout()" title="Logout" aria-label="Logout"><i data-lucide="log-out"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-view="live" data-roles="operator,admin,super_admin">
+                    <span class="nav-icon"><i data-lucide="video"></i></span>
+                    <span class="nav-label">Live Camera</span>
+                </a>
+                <a href="#" class="nav-item" data-view="cameras" data-roles="admin,super_admin,operator">
+                    <span class="nav-icon"><i data-lucide="film"></i></span>
+                    <span class="nav-label">Captures</span>
+                </a>
+                <a href="#" class="nav-item" data-view="schedule" data-roles="admin,super_admin,operator">
+                    <span class="nav-icon"><i data-lucide="calendar-clock"></i></span>
+                    <span class="nav-label">Schedule</span>
+                </a>
+                <a href="#" class="nav-item" data-view="analytics" data-roles="admin,super_admin">
+                    <span class="nav-icon"><i data-lucide="chart-no-axes-combined"></i></span>
+                    <span class="nav-label">Analytics</span>
+                </a>
+                <a href="#" class="nav-item" data-view="users" data-roles="admin,super_admin">
+                    <span class="nav-icon"><i data-lucide="users"></i></span>
+                    <span class="nav-label">Users</span>
+                </a>
+                <a href="#" class="nav-item" data-view="system" data-roles="admin,super_admin,operator">
+                    <span class="nav-icon"><i data-lucide="monitor-cog"></i></span>
+                    <span class="nav-label">System</span>
+                </a>
+                <a href="#" class="nav-item" data-view="settings" data-roles="super_admin,admin">
+                    <span class="nav-icon"><i data-lucide="settings-2"></i></span>
+                    <span class="nav-label">Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="ai-status">
+                    <span class="ai-status-label">AI Engine</span>
+                    <span class="ai-status-dot active" id="aiStatusDot">●</span>
+                    <span class="ai-status-text" id="aiStatusText">Running</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="content">
+            <!-- Live Camera View -->
+            <section id="view-live" class="view-section active">
+                <!-- Live Camera Controls -->
+                <div class="section-header">
+                    <div class="live-camera-header-left">
+                        <h2><i data-lucide="video"></i> Live Camera</h2>
+                        <div class="live-camera-count" id="liveCameraCount">0 cameras</div>
+                    </div>
+                </div>
+                <div class="motion-popup-panel">
+                    <div class="motion-popup-title"><i data-lucide="scan-line"></i> Motion Clips</div>
+                    <div class="motion-popup-area" id="motionPopupArea"></div>
+                </div>
+
+                <div class="camera-grid" id="cameraGrid">
+                    <!-- Live grid rendered by JS -->
+                </div>
+            </section>
+
+            <!-- Cameras View -->
+            <section id="view-cameras" class="view-section">
+                <div class="section-header">
+                    <h2><i data-lucide="film"></i> Capture Center</h2>
+                </div>
+
+                <div class="capture-tabs" role="tablist" aria-label="Capture sections">
+                    <button class="capture-tab active role-restricted" type="button" data-capture-tab="overview" data-allowed-roles="admin,super_admin">Overview</button>
+                    <button class="capture-tab role-restricted" type="button" data-capture-tab="cameras" data-allowed-roles="admin,super_admin">Cameras</button>
+                    <button class="capture-tab" type="button" data-capture-tab="recordings">Recordings</button>
+                    <button class="capture-tab role-restricted" type="button" data-capture-tab="zones" data-allowed-roles="admin,super_admin">Motion Zones</button>
+                    <button class="capture-tab role-restricted" type="button" data-capture-tab="storage" data-allowed-roles="admin,super_admin">Storage</button>
+                </div>
+
+                <div class="capture-panels">
+                    <div class="capture-panel active" data-capture-panel="overview">
+                        <div class="capture-overview-grid">
+                            <div class="capture-stat-card">
+                                <span class="capture-stat-label">Cameras</span>
+                                <strong id="captureOverviewCameras">0</strong>
+                            </div>
+                            <div class="capture-stat-card">
+                                <span class="capture-stat-label">Recordings</span>
+                                <strong id="captureOverviewRecordings">0</strong>
+                            </div>
+                            <div class="capture-stat-card">
+                                <span class="capture-stat-label">Alerts</span>
+                                <strong id="captureOverviewAlerts">0</strong>
+                            </div>
+                            <div class="capture-stat-card">
+                                <span class="capture-stat-label">Storage</span>
+                                <strong id="captureOverviewStorage">0 MB</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="capture-panel" data-capture-panel="cameras">
+                        <div class="camera-management-toolbar">
+                            <h3>Camera Management</h3>
+                            <button class="btn btn-primary icon-action-btn role-restricted" data-allowed-roles="admin,super_admin" title="Add camera" aria-label="Add camera" onclick="showAddCamera()"><i data-lucide="plus"></i></button>
+                        </div>
+                        <div class="camera-management" id="cameraManagement">
+                            <!-- Camera list rendered by JS -->
+                        </div>
+                    </div>
+
+                    <div class="capture-panel" data-capture-panel="recordings">
+                        <div class="recordings-section">
+                            <h3><i data-lucide="clapperboard"></i> Video Recordings</h3>
+                            <div class="recordings-container" id="recordingsContainer">
+                                <!-- Recordings list rendered by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="capture-panel" data-capture-panel="zones">
+                        <div id="motionZonesPanelContent" class="capture-empty-panel">
+                            Add a camera and open the “Add Rule” action to start drawing detection zones and configure motion alerts.
+                        </div>
+                    </div>
+
+                    <div class="capture-panel" data-capture-panel="storage">
+                        <div id="captureStoragePanelContent" class="capture-empty-panel">
+                            Storage metrics, retention policies, and archive management will be available here for capture optimization.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Schedule View -->
+            <section id="view-schedule" class="view-section">
+                <div class="section-header schedule-header">
+                    <h2><i data-lucide="calendar-clock"></i> Monitoring Schedule</h2>
+                    <span class="operator-view-only-badge">View only</span>
+                </div>
+                <div class="schedule-layout">
+                    <div class="schedule-card schedule-arm-settings">
+                        <div class="schedule-card-header">
+                            <h3>Arm Schedule Settings</h3>
+                            <div class="schedule-card-actions-right">
+                                <span class="schedule-badge" id="scheduleBadge">Loading…</span>
+                                <button class="btn btn-sm btn-success" onclick="setManualSchedule('armed')">Arm</button>
+                                <button class="btn btn-sm btn-danger" onclick="setManualSchedule('disarmed')">Disarm</button>
+                                <button class="btn btn-sm btn-secondary" onclick="clearManualSchedule()">Auto</button>
+                            </div>
+                        </div>
+                        <div class="schedule-status-box" id="scheduleStatusBox">
+                            <div class="schedule-status-title" id="scheduleStatusTitle">Standby</div>
+                            <div class="schedule-status-text" id="scheduleStatusText">Loading current monitoring mode…</div>
+                            <div class="schedule-status-indicator">
+                                <span id="scheduleStateLight" class="schedule-state-light"></span>
+                                <span id="scheduleStateLightLabel" class="schedule-state-light-label"></span>
+                            </div>
+                            <div class="schedule-status-detail" id="scheduleStatusDetail"></div>
+                        </div>
+                        <div id="scheduleOperatorSummary" class="schedule-operator-summary" aria-live="polite"></div>
+                        <div class="schedule-section">
+                            <div class="schedule-section-title">Schedule Automation</div>
+                            <div class="schedule-section-row">
+                                <label class="schedule-toggle schedule-checkbox-row">
+                                    <input type="checkbox" id="scheduleEnabled" checked>
+                                    <span>Enable automatic arming/disarming</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="schedule-section">
+                            <div class="schedule-section-title">Default Mode & Timezone</div>
+                            <div class="schedule-section-grid schedule-profile-grid">
+                                <div class="schedule-field">
+                                    <label>Action</label>
+                                    <select id="scheduleDefaultMode">
+                                        <option value="armed">Armed</option>
+                                        <option value="disarmed" selected>Disarmed</option>
+                                    </select>
+                                </div>
+                                <div class="schedule-field">
+                                    <label>Timezone</label>
+                                    <select id="scheduleTimezone">
+                                        <option value="UTC">UTC</option>
+                                        <option value="America/New_York">America/New_York</option>
+                                        <option value="America/Chicago">America/Chicago</option>
+                                        <option value="America/Denver">America/Denver</option>
+                                        <option value="America/Los_Angeles">America/Los_Angeles</option>
+                                        <option value="Europe/London">Europe/London</option>
+                                        <option value="Europe/Berlin">Europe/Berlin</option>
+                                        <option value="Asia/Tokyo">Asia/Tokyo</option>
+                                        <option value="Asia/Singapore">Asia/Singapore</option>
+                                        <option value="Australia/Sydney">Australia/Sydney</option>
+                                    </select>
+                                </div>
+                                <div class="schedule-field schedule-field-long">
+                                    <label>Profiling Method</label>
+                                    <select id="scheduleProfilingMethod">
+                                        <option value="routine" selected>Routine schedule</option>
+                                        <option value="routine_holiday">Routine schedule + Holiday Override</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="schedule-list-label">Routine schedules below are the primary automation. This fallback only applies when no routine window matches.</div>
+                        </div>
+                        <div class="schedule-actions schedule-actions-fullwidth schedule-actions-main">
+                            <button class="btn btn-primary" onclick="saveScheduleConfig()">Save Schedule</button>
+                            <button class="btn btn-sm" onclick="openCalendarView()">Calendar View</button>
+                            <button class="btn btn-sm" onclick="addScheduleRow()">Add Schedule</button>
+                            <button class="btn btn-sm" onclick="addHolidayOverride()">Add Override</button>
+                        </div>
+                    </div>
+
+                    <div class="schedule-card schedule-side-card">
+                        <div class="schedule-card-header">
+                            <h3>Routine & Holiday Overrides</h3>
+                        </div>
+                        <div class="schedule-section">
+                            <div class="schedule-section-title">Routine Schedules</div>
+                            <div class="schedule-list-label">Scroll inside this container to view all schedules.</div>
+                            <div id="scheduleRows"></div>
+                        </div>
+                        <div class="schedule-section">
+                            <div class="schedule-section-title">Holiday / Override Monitoring</div>
+                            <div id="holidayRows"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Calendar Modal -->
+            <div class="modal" id="calendarModal">
+                <div class="modal-content calendar-modal-content">
+                    <div class="modal-header">
+                        <h3>📅 Schedule Calendar</h3>
+                    </div>
+                    <div class="modal-body">
+                        <div id="calendarGrid" class="calendar-grid">Loading calendar…</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics View -->
+            <section id="view-analytics" class="view-section">
+                <div class="section-header">
+                    <h2><i data-lucide="chart-no-axes-combined"></i> Analytics & Reports</h2>
+                </div>
+                <div class="analytics-metrics">
+                    <div class="analytics-card">
+                        <h3>Total Cameras</h3>
+                        <div class="metric-value" id="totalCameras">0</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Offline Cameras</h3>
+                        <div class="metric-value" id="offlineCount">0</div>
+                    </div>
+                </div>
+                <div class="analytics-details">
+                    <div class="analytics-card">
+                        <div class="analytics-card-header">
+                            <h3>Alarms Per Camera</h3>
+                            <div class="analytics-card-controls">
+                                <label for="alarmIntervalSelect" class="analytics-control-label">Interval</label>
+                                <select id="alarmIntervalSelect" class="analytics-interval-select" onchange="loadAnalytics()">
+                                    <option value="minute">Per Minute</option>
+                                    <option value="hour">Per Hour</option>
+                                    <option value="day" selected>Per Day</option>
+                                    <option value="week">Per Week</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="alarmsPerCameraInfo" class="analytics-card-subtitle">Showing per-day alarm counts over the last week.</div>
+                        <div id="alarmsPerCamera">Loading…</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Most Detected Subjects Today</h3>
+                        <div id="mostDetectedToday">-</div>
+                    </div>
+                    <div class="analytics-card analytics-wide">
+                        <div class="analytics-card-header">
+                            <h3>Recent Changes</h3>
+                            <button class="btn btn-sm" onclick="openCalendarView('history')">History Calendar</button>
+                        </div>
+                        <div id="auditEventsList" class="analytics-audit-list">Loading...</div>
+                    </div>
+                    <div class="analytics-card analytics-wide">
+                        <h3>Camera Storage Capacity</h3>
+                        <div id="cameraStorageList" class="analytics-list">Loading…</div>
+                        <div id="cameraStorageTotal" class="analytics-storage-total"></div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Recording Status Per Camera</h3>
+                        <div id="recordingStatus">Loading…</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- System View -->
+            <section id="view-system" class="view-section">
+                <div class="section-header">
+                    <h2><i data-lucide="monitor-cog"></i> Device Health</h2>
+                </div>
+                <div class="system-dashboard">
+                    <div id="systemHealthCard" class="system-card system-health-card">
+                        <div>
+                            <span class="system-kicker">System status</span>
+                            <h3 id="systemHealthStatus">Checking system health</h3>
+                            <p id="systemHealthSummary">Collecting current resource readings…</p>
+                        </div>
+                        <span id="systemHealthDot" class="system-health-dot" aria-hidden="true"></span>
+                    </div>
+                    <div class="system-card system-resource-card">
+                        <div class="system-card-heading"><h3>Resource usage</h3><span class="system-card-note">Live</span></div>
+                        <div class="system-meter-row"><div><span>CPU</span><strong id="cpuLoad">0%</strong></div><div class="system-meter"><span id="cpuUsageBar"></span></div></div>
+                        <div class="system-meter-row"><div><span>Memory</span><strong id="ramUsage">0%</strong></div><div class="system-meter"><span id="ramUsageBar"></span></div></div>
+                        <div class="system-meter-row"><div><span>Disk usage</span><strong id="rootDisk">0%</strong></div><div class="system-meter"><span id="rootDiskBar"></span></div></div>
+                        <div class="cpu-load-line"><span class="cpu-load-trend trend-flat" id="cpuLoadTrend">→</span><span class="cpu-load-text">CPU trend</span></div>
+                    </div>
+                    <div class="system-card system-storage-card">
+                        <div class="system-card-heading"><h3>Storage & recordings</h3><span class="system-card-note">Capacity</span></div>
+                        <div class="system-storage-stat"><span>Disk capacity</span><strong id="systemDiskCapacity">Loading…</strong></div>
+                        <div class="system-storage-stat"><span>Available</span><strong id="systemDiskFree">Loading…</strong></div>
+                        <div class="system-storage-stat"><span>Recorded clips</span><strong id="systemRecordingStorage">Loading…</strong></div>
+                        <div class="system-sensor-note">Disk usage percentage is shown in Resource usage.</div>
+                    </div>
+                    <div class="system-card system-sensors-card">
+                        <div class="system-card-heading"><h3>Thermal sensors</h3><span class="system-card-note">Hardware</span></div>
+                        <div class="system-sensor-row" id="coreTempCard"><span>CPU temperature</span><strong id="coreTemp">Unavailable</strong></div>
+                        <div class="system-sensor-row" id="gpuTempCard"><span>GPU temperature</span><strong id="gpuTemp">Unavailable</strong></div>
+                        <div class="system-sensor-note">Unavailable sensors are not treated as zero.</div>
+                    </div>
+                    <div class="system-card system-integration-card">
+                        <div class="system-card-heading"><h3>Portal integrations</h3><span class="system-card-note">Connectivity</span></div>
+                        <div class="system-sensor-row"><span>AI engine</span><strong id="systemAiStatus">Running</strong></div>
+                        <div class="system-sensor-row"><span>Alarm Wall XML/TCP</span><strong id="systemAlarmWallStatus">Checking…</strong></div>
+                        <div class="system-sensor-row"><span>Cameras online</span><strong id="systemCameraStatus">0</strong></div>
+                    </div>
+                    <div class="system-card system-uptime-card">
+                        <div class="system-card-heading"><h3>System uptime</h3><span class="system-card-note">Since boot</span></div>
+                        <div class="system-uptime">
+                            <div class="uptime-block">
+                                <div class="uptime-label">Days</div>
+                                <div id="systemUptimeDays" class="uptime-days">0</div>
+                            </div>
+                            <div class="uptime-block">
+                                <div class="uptime-label">Time</div>
+                                <div id="systemUptimeTime" class="uptime-time">00:00:00</div>
+                            </div>
+                            <div class="uptime-bar-wrap">
+                                <div class="uptime-bar"><div id="uptimeBarFill" class="uptime-bar-fill" style="width:0%"></div></div>
+                                <div class="uptime-bar-label">Day progress</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Management View -->
+            <section id="view-users" class="view-section">
+                <div class="section-header">
+                    <h2><i data-lucide="users"></i> User Management</h2>
+                </div>
+                <div class="users-view-grid">
+                    <div class="users-list-panel settings-group">
+                        <div class="panel-header">
+                            <h3>User accounts</h3>
+                            <p class="panel-subtitle">View platform users and their roles.</p>
+                        </div>
+                        <div id="usersList" class="users-list">
+                            <p class="empty-list-message">Loading users...</p>
+                        </div>
+                    </div>
+                    <div class="users-add-panel settings-group">
+                        <div class="panel-header">
+                            <h3>Add user</h3>
+                            <p class="panel-subtitle">Only Superadmin can create or remove users.</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" id="addUserName" placeholder="new user">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="addUserEmail" placeholder="user@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="addUserPassword" placeholder="temporary password">
+                        </div>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <select id="addUserRole">
+                                <option value="super_admin">Superadmin</option>
+                                <option value="admin">Admin</option>
+                                <option value="operator" selected>Operator</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="saveInlineUser()">Add User</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings View -->
+            <section id="view-settings" class="view-section">
+                <div class="section-header">
+                    <h2><i data-lucide="settings-2"></i> System Settings</h2>
+                </div>
+                <div class="settings-container">
+                    <div class="settings-tabs">
+                        <button class="settings-tab active" data-tab="ai">AI Detection</button>
+                        <button class="settings-tab" data-tab="recordings">Recordings</button>
+                        <button class="settings-tab" data-tab="system">Alert</button>
+                        <button class="settings-tab" data-tab="alarm-wall">XML/TCP</button>
+                        <button class="settings-tab" data-tab="network">Network</button>
+                    </div>
+
+                    <div class="settings-panels">
+                        <div class="settings-panel" data-panel="ai">
+                            <div class="settings-group">
+                                <h3>AI Detection Settings</h3>
+                                <div class="settings-row">
+                                    <label>Global Confidence Threshold</label>
+                                    <input type="range" min="50" max="95" value="70" id="globalThreshold">
+                                    <span id="thresholdValue">70%</span>
+                                </div>
+                                <div class="settings-row">
+                                    <label>Detection Interval</label>
+                                    <select id="detectionInterval">
+                                        <option value="5">5 seconds</option>
+                                        <option value="10" selected>10 seconds</option>
+                                        <option value="30">30 seconds</option>
+                                        <option value="60">60 seconds</option>
+                                    </select>
+                                </div>
+                                <div class="settings-row ai-settings-row" id="aiControls">
+                                    <label>AI Engine Controls</label>
+                                    <div class="ai-settings-actions">
+                                        <button class="btn btn-sm btn-success" onclick="startAI()">Start AI</button>
+                                        <button class="btn btn-sm btn-danger" onclick="stopAI()">Stop AI</button>
+                                    </div>
+                                </div>
+                                <div class="settings-row settings-row-actions">
+                                    <button class="btn btn-primary" onclick="saveAiDetectionSettings()">Save AI Settings</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-panel" data-panel="recordings" style="display:none">
+                            <div class="settings-group">
+                                <h3>Video Recordings</h3>
+                                <div class="settings-row">
+                                    <label>Retention Days</label>
+                                    <input type="number" id="recordingRetentionDays" min="1" max="365" value="30">
+                                    <span id="retentionDaysDisplay">30 days</span>
+                                </div>
+                                <div class="settings-row">
+                                    <label>
+                                        <input type="checkbox" id="autoCleanupEnabled" checked>
+                                        Enable automatic cleanup
+                                    </label>
+                                </div>
+                                <div class="settings-row">
+                                    <button class="btn btn-primary" onclick="saveRecordingsConfig()">Save Recording Settings</button>
+                                    <button class="btn" onclick="performCleanup()">Cleanup Now</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-panel" data-panel="system" style="display:none">
+                            <div class="settings-group">
+                                <h3>SMTP Settings</h3>
+                                <div class="settings-row">
+                                    <label>Device ID</label>
+                                    <input type="text" id="deviceId" placeholder="e.g. TEMP12345">
+                                </div>
+                                <div class="settings-row">
+                                    <label>SMTP Server</label>
+                                    <input type="text" id="smtpServer" placeholder="e.g. smtp.mailtrap.io">
+                                </div>
+                                <div class="settings-row">
+                                    <label>SMTP Port</label>
+                                    <input type="number" id="smtpPort" min="1" max="65535" value="2525" placeholder="2525">
+                                </div>
+                                <div class="settings-row">
+                                    <label>Recipient Domain</label>
+                                    <input type="text" id="recipientDomain" placeholder="e.g. example.com">
+                                </div>
+                                <div class="settings-row">
+                                    <label>Sender Address</label>
+                                    <input type="email" id="integrationSender" placeholder="e.g. alerts@example.com">
+                                </div>
+                                <div class="settings-row">
+                                    <label>Password</label>
+                                    <input type="password" id="integrationPassword" placeholder="Enter SMTP password">
+                                </div>
+                                <div class="settings-row">
+                                    <label>Security</label>
+                                    <select id="integrationSecurity">
+                                        <option value="none">None</option>
+                                        <option value="automatic">Automatic</option>
+                                    </select>
+                                </div>
+                                <div class="settings-row settings-row-actions">
+                                    <button class="btn btn-primary" onclick="saveSystemIntegrationSettings()">Save SMTP Settings</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="settings-panel alarm-wall-panel" data-panel="alarm-wall" style="display:none">
+                            <div class="settings-group">
+                                <h3>Alarm Wall Portal</h3>
+                                <p class="panel-subtitle">Send finalized camera motion clips as XML over TCP.</p>
+                                <div class="settings-row">
+                                    <label for="alarmWallEnabled">Enable XML/TCP delivery</label>
+                                    <input type="checkbox" id="alarmWallEnabled">
+                                </div>
+                                <div class="settings-row">
+                                    <label for="alarmWallHost">Alarm Wall host</label>
+                                    <input type="text" id="alarmWallHost" placeholder="192.168.1.50 or alarm-wall.local">
+                                </div>
+                                <div class="settings-row">
+                                    <label for="alarmWallPort">TCP port</label>
+                                    <input type="number" id="alarmWallPort" min="1" max="65535" value="9100">
+                                </div>
+                                <div class="settings-row">
+                                    <label for="alarmWallDeviceId">Device ID</label>
+                                    <input type="text" id="alarmWallDeviceId" placeholder="TEMP12345">
+                                </div>
+                                <div class="settings-row">
+                                    <label for="alarmWallIncludeClip">Include clip bytes</label>
+                                    <input type="checkbox" id="alarmWallIncludeClip" checked>
+                                </div>
+                                <div class="settings-row">
+                                    <label for="alarmWallTimeout">Connection timeout</label>
+                                    <input type="number" id="alarmWallTimeout" min="1" max="120" value="10">
+                                    <span>seconds</span>
+                                </div>
+                                <div class="settings-row settings-row-actions">
+                                    <button class="btn btn-primary" onclick="saveAlarmWallSettings()">Save XML/TCP Settings</button>
+                                    <button class="btn" onclick="testAlarmWallSettings()">Test Connection</button>
+                                </div>
+                                <div class="settings-row">
+                                    <div id="alarmWallStatusMessage" class="settings-status" aria-live="polite"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="settings-panel" data-panel="network" style="display:none">
+                            <div class="network-settings-container">
+                                <div class="settings-group network-settings-tile">
+                                    <h3>Network Settings</h3>
+                                    <div class="settings-row">
+                                        <label>Network Mode</label>
+                                        <div class="network-mode-group">
+                                            <label><input type="checkbox" id="networkDhcp" checked> DHCP</label>
+                                            <label><input type="checkbox" id="networkStatic"> STATIC</label>
+                                        </div>
+                                    </div>
+                                    <div id="dhcpFields" class="network-fields">
+                                        <div class="settings-row">
+                                            <label>DHCP Hostname</label>
+                                            <input type="text" id="dhcpHostname" placeholder="Optional hostname">
+                                        </div>
+                                    </div>
+                                    <div id="staticFields" class="network-fields">
+                                        <div class="settings-row">
+                                            <label>IP Address</label>
+                                            <input type="text" id="staticIp" placeholder="192.168.1.100">
+                                        </div>
+                                        <div class="settings-row">
+                                            <label>Subnet Mask</label>
+                                            <input type="text" id="staticSubnet" placeholder="255.255.255.0">
+                                        </div>
+                                        <div class="settings-row">
+                                            <label>Gateway</label>
+                                            <input type="text" id="staticGateway" placeholder="192.168.1.1">
+                                        </div>
+                                        <div class="settings-row">
+                                            <label>DNS Server</label>
+                                            <input type="text" id="staticDns" placeholder="8.8.8.8">
+                                        </div>
+                                    </div>
+                                    <div class="settings-row settings-row-actions">
+                                        <button class="btn btn-primary" onclick="saveNetworkSettings()">Save Network Settings</button>
+                                    </div>
+                                    <div class="settings-row">
+                                        <div id="networkStatusMessage" class="settings-status"></div>
+                                    </div>
+                                    <div class="settings-row">
+                                        <div class="settings-status">Note: OS-level network changes require the backend to run with administrator privileges.</div>
+                                    </div>
+                                </div>
+                                <div class="settings-group network-settings-tile network-info-group">
+                                    <h3>Current Network Info</h3>
+                                    <div class="settings-row">
+                                        <label>Interface</label>
+                                        <div id="networkInterfaceName" class="info-value">N/A</div>
+                                    </div>
+                                    <div class="settings-row">
+                                        <label>IP Address</label>
+                                        <div id="networkCurrentIp" class="info-value">N/A</div>
+                                    </div>
+                                    <div class="settings-row">
+                                        <label>Subnet Mask</label>
+                                        <div id="networkCurrentSubnet" class="info-value">N/A</div>
+                                    </div>
+                                    <div class="settings-row">
+                                        <label>Gateway</label>
+                                        <div id="networkCurrentGateway" class="info-value">N/A</div>
+                                    </div>
+                                    <div class="settings-row">
+                                        <label>DNS Servers</label>
+                                        <div id="networkCurrentDns" class="info-value">N/A</div>
+                                    </div>
+                                    <div class="settings-row">
+                                        <label>MAC Address</label>
+                                        <div id="networkCurrentMac" class="info-value">N/A</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add Camera Modal -->
+    <div class="modal" id="addCameraModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Camera</h3>
+                <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Camera Name</label>
+                    <input type="text" id="camName">
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="camLocation">
+                </div>
+                <div class="form-group">
+                    <label>RTSP URL</label>
+                    <input type="text" id="camRTSP">
+                </div>
+                <div class="form-group">
+                    <label>RTSP Username</label>
+                    <input type="text" id="camRTSPUsername">
+                </div>
+                <div class="form-group">
+                    <label>RTSP Password</label>
+                    <input type="password" id="camRTSPPassword">
+                </div>
+                <div class="form-group">
+                    <label>Confidence Threshold</label>
+                    <input type="range" min="50" max="95" value="70" id="camThreshold">
+                    <span id="camThresholdValue">70%</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveCamera()">Save Camera</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Camera Modal -->
+    <div class="modal" id="editCameraModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Camera</h3>
+                <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Camera Name</label>
+                    <input type="text" id="editCamName">
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="editCamLocation">
+                </div>
+                <div class="form-group" style="display: none;">
+                    <label>IP Address</label>
+                    <input type="text" id="editCamIP">
+                </div>
+                <div class="form-group">
+                    <label>RTSP URL</label>
+                    <input type="text" id="editCamRTSP">
+                </div>
+                <div class="form-group">
+                    <label>RTSP Username</label>
+                    <input type="text" id="editCamRTSPUsername">
+                </div>
+                <div class="form-group">
+                    <label>RTSP Password</label>
+                    <input type="password" id="editCamRTSPPassword">
+                </div>
+                <div class="form-group">
+                    <label>Confidence Threshold</label>
+                    <input type="range" min="50" max="95" value="70" id="editCamThreshold">
+                    <span id="editCamThresholdValue">70%</span>
+                </div>
+                <div class="form-group" style="display: none;">
+                    <label>Detection Zones</label>
+                    <input type="text" id="editCamZones">
+                </div>
+                <div class="form-group">
+                    <label>Rules</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="editCamDetectHumans" checked> Humans</label>
+                        <label><input type="checkbox" id="editCamDetectCars" checked> Cars</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveCamera()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Zone Editor Modal -->
+    <div class="modal" id="zoneEditorModal">
+        <div class="modal-content zone-modal-content">
+            <div class="modal-header">
+                <h3>Add Detection Zone</h3>
+                <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="zone-editor-hint">
+                    Draw a motion trigger area for the selected camera by clicking and dragging on the preview.
+                </div>
+                <div class="existing-zones" id="zoneList">
+                    <!-- Existing zones will appear here -->
+                </div>
+                <div class="zone-canvas-wrap">
+                    <canvas id="zoneCanvas" width="560" height="320"></canvas>
+                </div>
+                <div class="form-group">
+                    <label>Zone Name</label>
+                    <input type="text" id="zoneName">
+                </div>
+                <div class="form-group">
+                    <label>Rule</label>
+                    <select id="zoneObjectType">
+                        <option value="human">Human</option>
+                        <option value="car">Car</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button id="zoneSaveBtn" class="btn btn-primary" onclick="saveZone()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Preview Modal -->
+    <div class="modal" id="cameraPreviewModal">
+        <div class="modal-content preview-modal-content">
+            <div class="modal-header">
+                <h3 id="previewModalTitle">Camera Preview</h3>
+                <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body" id="previewModalBody">
+                <div class="preview-shell">
+                    <div class="preview-placeholder">
+                        <div class="preview-indicator">Camera live</div>
+                        <div class="preview-feed-icon"><i data-lucide="video"></i></div>
+                        <div class="preview-caption">Select a camera card to preview it here.</div>
+                    </div>
+                </div>
+            </div>
+            <!-- footer removed to avoid redundant close button (header has close) -->
+        </div>
+    </div>
+
+    <!-- Create User Modal -->
+    <div class="modal" id="createUserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New User</h3>
+                <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="userName" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="userEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="userPassword" required>
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select id="userRole" required>
+                        <option value="operator">Operator</option>
+                        <option value="admin">Admin</option>
+                        <option value="super_admin">Super Admin</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveUser()">Create User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Playback Modal -->
+    <div class="modal" id="videoPlaybackModal">
+        <div class="modal-content video-modal-content">
+            <div class="modal-header">
+                <h3 id="videoTitle">Recording Playback</h3>
+                <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body video-modal-body">
+                <div class="video-player-container">
+                    <video id="videoPlayer" controls width="100%" height="auto" style="background: #000; border-radius: 8px;">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                <div class="video-info-panel">
+                    <div class="info-row">
+                        <span class="label">Camera:</span>
+                        <span id="videoCamera">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Duration:</span>
+                        <span id="videoDuration">0s</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Size:</span>
+                        <span id="videoSize">0 MB</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Created:</span>
+                        <span id="videoCreated">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Notes:</span>
+                        <input type="text" id="videoNotes" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="archiveCurrentRecording()">Archive</button>
+                <button class="btn btn-danger" onclick="deleteCurrentRecording()">Delete</button>
+                <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <script src="node_modules/lucide/dist/umd/lucide.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
